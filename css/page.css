@@ -1,0 +1,65 @@
+body{
+    font-family: 'Lato', sans-serif;
+    font-size: 16px;
+}
+
+div.main-container{
+    width: 70%;
+    margin: auto;
+    margin-top: 150px;
+    margin-bottom: 150px;
+}
+
+div.main-container p{
+    line-height: 150%;
+}
+
+.controls{
+    font-size: 0.8em;
+    text-align: center;
+    margin-bottom: 2.5em;
+}
+
+.simple-button{
+    padding: 0.2em;
+    margin-left: 0.1em;
+    margin-right: 0.1em;
+    border: 1px solid #0e6dcd;
+    color: #000;
+}
+
+.simple-button:hover{
+    background: #0e6dcd;
+    color: #fff;
+    cursor: pointer;
+}
+
+/* Table styling */
+table.simplex-tableau{
+    margin: auto;
+    border-collapse: collapse;
+    margin-top: 2em;
+    margin-bottom: 2em;
+}
+
+table.simplex-tableau td + td,
+table.simplex-tableau th + th { border-left: 1px solid #777; }
+
+table.simplex-tableau td + td:last-child,
+table.simplex-tableau th + th:last-child{ border-left: 2px solid #000; }
+
+table.simplex-tableau tr + tr { border-top: 1px solid #777; }
+table.simplex-tableau tr + tr:last-child,
+table.simplex-tableau tr:first-child  + tr{ border-top: 2px solid #000; }
+
+table.simplex-tableau td,
+table.simplex-tableau th{
+    min-width: 25px;
+    min-height: 25px;
+    padding: 1em;
+    text-align: center;
+}
+
+table.simplex-tableau td input{
+    width: 40px;
+}

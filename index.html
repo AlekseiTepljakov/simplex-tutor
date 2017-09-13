@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <!-- Load and configure MathJax -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML">
+        // Configure MathJax
+        MathJax.Hub.Config({
+            extensions: ["tex2jax.js"],
+            jax: ["input/TeX", "output/HTML-CSS"],
+            tex2jax: {
+                inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+                displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+            },
+            "HTML-CSS": { availableFonts: ["TeX"] }
+        });
+    </script>
+
+    <!-- D3.js -->
+    <script src="js/d3.min.js"></script>
+
+    <!-- Mousetrap (key bindings) -->
+    <script src="js/mousetrap.min.js"></script>
+
+    <!-- Operations with fractions -->
+    <script src="js/fraction.min.js"></script>
+
+    <!-- The main script -->
+    <script src="js/simplex_tutor.js"></script>
+
+    <meta charset="UTF-8">
+    <title>Basic Simplex Method Tutor v1.0</title>
+
+    <link rel="stylesheet" href="css/page.css">
+
+    <!-- Lato font -->
+    <link href="https://fonts.googleapis.com/css?family=Lato:400,400i,700,700i" rel="stylesheet">
+
+</head>
+<body>
+
+    <div class="main-container">
+        <h3>Basic Simplex Method Tutor</h3>
+
+        <div id="cells">
+            <div class="ttt"></div>
+        </div>
+
+    </div>
+
+    <script type="text/javascript">
+        // Initialize the cells
+        var cell_player = new CellPlayer("cells");
+    </script>
+
+</body>
+</html>
