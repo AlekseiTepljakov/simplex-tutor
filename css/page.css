@@ -63,3 +63,7 @@ table.simplex-tableau th{
 table.simplex-tableau td input{
     width: 40px;
 }
+
+table.simplex-tableau .highlighted{
+    background: #00cf8b;
+}

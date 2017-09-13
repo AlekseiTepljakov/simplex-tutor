@@ -9,24 +9,51 @@ var STRING_INDEX = {
                    "be automatically converted to a common fraction. Slack variables are added automatically. Refresh page to start over.",
     "proceed_to_initial": "Once you are ready, click on <<<button_proceed>>> to continue.",
     "initial": "Done! To navigate forward to the next iteration, click on the following key or press it on your keyboard. <<<button_next>>>",
-    "inspect_obj_row_continue": "Inspect the objective row. The most negative element is <<<negative_element>>>. <<<button_next>>>",
+    "inspect_obj_row_continue": "Inspect the objective row. The most negative element is <<<negative_element>>>. Thus, column <<<pivot_column>>> is the pivot column. <<<button_next>>>",
     "inspect_obj_row_stop": "Inspect the objective row. There are no negative values, so a feasible solution has been found. <<<button_next>>>",
     "degeneracy": "One or more basic variables have zero values, so the solution is degenerate.",
-    "locate_pivot_element": "To locate the pivot element in the column, let us compute the ratios of ($b$ : column elements). " +
-                            "We get <<<ratios_computed>>>. The smallest positive ratio <<<smallest_ratio>>> is obtained in the " +
+    "locate_pivot_element": "To locate the pivot element in the column, compute the ratios of the right hand side and the elements of the column. " +
+                            "Ignoring negative or zero values in the column, we get <<<ratios_computed>>>. The smallest positive ratio <<<smallest_ratio>>> is obtained in " +
                             "row <<<row>>>, so the pivot element is <<<pivot_element>>>. <<<button_next>>>",
     "process_pivot_element": "To replace the pivot element with $+1$, we need to divide row <<<row>>> by <<<row_divide>>>. " +
-                             "Then, the new row elements are <<<new_row_elements>>>. <<<button_next>>>",
+                             "Then, the new row is <<<new_row_elements>>> <<<button_next>>>",
+    "no_process_pivot_element": "The pivot element is already $+1$, so the row remains unchanged. <<<button_next>>>",
     "process_pivot_column": "To get $0$ elsewhere in the pivot column, apply the following row operations using the modified " +
                             "row <<<row>>> to get the new tableau: <<<row_operations>>>. <<<button_next>>>",
-    "new_tableau": "The new tableau is thus constructed."
+    "new_tableau": "The new tableau is thus constructed. <<<button_next>>>"
 };
 
 // Helper functions
+
+// Use to re-typeset math on the page
 function mathjax_cells_update(){
     // Queue a MathJax update
     MathJax.Hub.Queue(["Typeset",MathJax.Hub,"cells"]);
 }
+
+// Get last array element
+Array.prototype.last = function(){
+    return this[this.length-1];
+};
+
+// Get the most negative value (fractions) from an array
+Array.prototype.min_neg = function(){
+
+    var negFound = false;
+    var negIndex = 0;
+    var negValue = 0;
+
+    for (var k=0; k<this.length; k++){
+        if (this[k] < negValue) {
+            negValue = this[k];
+            negIndex = k;
+            negFound = true;
+        }
+    }
+
+    return {"ind": negIndex, "found": negFound};
+
+};
 
 
 // Simplex Table object --- contains the table, rendering options with callbacks,
@@ -53,15 +80,23 @@ SimplexTable.prototype.init = function(){
     var $f = Fraction;
 
     // Default row values
-    this.rows = [[$f(1), $f(1), $f(1), $f(0), $f(0), $f(1)],
-                 [$f(1), $f(1), $f(0), $f(1), $f(0), $f(1)],
-                 [$f(-1), $f(-2), $f(0), $f(0), $f(1), $f(0)]
+    this.rows = [[$f(2), $f(4), $f(1), $f(0), $f(0), $f(120)],
+                 [$f(2), $f(2), $f(0), $f(1), $f(0), $f(80)],
+                 [$f(-3), $f(-4), $f(0), $f(0), $f(1), $f(0)]
     ];
 
     this.unknowns = 2;
     this.ineqs = 2;    // This is also the number of slack variables
     this.table_no = 1;
 
+};
+
+SimplexTable.prototype.highlightColumn = function(tcl, col){
+    d3.selectAll("."+tcl + " .c-" + col).classed("highlighted", true);
+};
+
+SimplexTable.prototype.highlightRow = function(tcl, row){
+    d3.selectAll("."+tcl + " .r-" + row).classed("highlighted", true);
 };
 
 SimplexTable.prototype.addUnknown = function()
@@ -96,13 +131,11 @@ SimplexTable.prototype.removeUnknown = function()
 
         // Remove an unknown from every row
         for (var k=0; k<this.rows.length; k++){
-            console.log(this.rows[k].splice(this.unknowns, 1));
+           this.rows[k].splice(this.unknowns, 1);
         }
 
         this.update_initial();
     }
-
-
 
 };
 
@@ -322,18 +355,22 @@ SimplexTable.prototype.update_initial = function(f){
         f = true;
     }
 
-    // Remove the initial table
-    d3.select("." + this.initial_class).html("");
-
     if (!f){
 
         // Update the values
         this.update_values();
 
+        // Remove the initial table
+        d3.select("." + this.initial_class).html("");
+
         // Replace table with a fixed one
         this.render(this.initial_class);
     }
     else{
+
+        // Remove the initial table
+        d3.select("." + this.initial_class).html("");
+
         // Just update the table taking into account the updated values
         this.render_initial(this.initial_class);
     }
@@ -381,6 +418,9 @@ function CellPlayer(id){
 
     var self = this;
 
+    this.sol_pc = null;         // Pivot column
+    this.sol_pr = null;         // Pivot row
+
     this.mc = d3.select("#"+id);
 
     // Cell number to attach unique classes
@@ -423,14 +463,207 @@ CellPlayer.prototype.iterate = function()
 {
     // Read off state and choose where to go
     switch(this.state){
+
+        // Special cases
+
+        // Unbounded problem
+        case -2:
+
+
+
+            break;
+
+        case -1:
+
+            // There are no further states.
+
+            break;
+
+        // This is the initial state, right after the initial tableau is rendered
         case 0:
             this.addCellMessage(STRING_INDEX["initial"]);
             this.state = 1; // Specify next state
             break;
 
+        // Here we check the objective row and locate the most negative element
         case 1:
-            alert("There is nothing here yet.");
+
+            var negel = this.table.rows.last().min_neg();
+
+            // If we located a negative value, we continue iterating
+            if (negel.found){
+
+                var foundFrac = this.table.rows.last()[negel.ind];
+
+                // Assign pivot column
+                this.sol_pc = negel.ind;
+
+                // Highlight the column in the current table
+                this.table.highlightColumn("table-cell-" + this.current_table_no, (negel.ind+1));
+
+                this.addCellMessage(STRING_INDEX["inspect_obj_row_continue"]
+                    .replace("<<<negative_element>>>", "$" + foundFrac.toLatex() + "$")
+                    .replace("<<<pivot_column>>>", "$\\#" + (negel.ind+1) + "$"));
+
+                this.state = 2;
+
+            }else{
+
+                // We stop here
+                this.addCellMessage(STRING_INDEX["inspect_obj_row_stop"]);
+
+                // And if there are now negative values, we stop
+                this.state = -1;
+
+            }
+
             break;
+
+        case 2:
+
+            // Get all the ratios
+            var ma = this.table.rows;
+            var minrat = Number.MAX_VALUE;
+            var ratstr = ""; var ratstr_buffer = "";
+            var ratfound = false;
+            var ratind = 0;
+
+            for (var k=0; k<ma.length-1; k++){
+                    if (ma[k][this.sol_pc] > 0){
+                        ratfound = true;
+                        var crat = ma[k].last() / ma[k][this.sol_pc];
+
+                        // Implement the string
+                        ratstr += ratstr_buffer + "$" + ma[k].last().toLatex() + ":" +
+                            ma[k][this.sol_pc].toLatex() + "=" + Fraction(crat).toLatex() + "$";
+
+                        if (k<ma.length-2){
+                            ratstr_buffer = ", ";
+                        }
+
+                        if (k==ma.length-3){
+                            ratstr_buffer += "and ";
+                        }
+
+                        // Store the smallest of ratios
+                        if (crat < minrat){
+                            minrat = crat;
+                            ratind = k;
+                        }
+                    }
+            }
+
+            // TODO: implement check for unboundedness
+            if (!ratfound){
+
+                this.state = -2;
+
+            }else{
+
+                // Provide explanation
+                this.addCellMessage(STRING_INDEX["locate_pivot_element"]
+                    .replace("<<<ratios_computed>>>", ratstr)
+                    .replace("<<<smallest_ratio>>>", "$" + Fraction(minrat).toLatex() + "$")
+                    .replace("<<<row>>>", "$R_{" + (ratind+1) + "}$")
+                    .replace("<<<pivot_element>>>", "$" + ma[ratind][this.sol_pc].toLatex() + "$"));
+
+                // Highlight row
+                this.table.highlightRow("table-cell-" + this.current_table_no, (ratind+1));
+
+                // Set pivot element
+                this.sol_pr = ratind;
+
+                // Go to next step
+                this.state = 3;
+
+            }
+
+            break;
+
+        // We now proceed to obtain the modified row
+        case 3:
+
+            // First we figure out what we need to divide the pivot element by go get "+1"
+            var to_div = this.table.rows[this.sol_pr][this.sol_pc];
+
+            if (to_div.equals(Fraction(1))){
+                this.addCellMessage(STRING_INDEX["no_process_pivot_element"]);
+            }
+            else{
+                // Next, we do the division
+                var new_row = "\\begin{equation}R_{" + (this.sol_pr+1) + "}^{\\star}=(";
+
+                for(var k=0; k<this.table.rows[this.sol_pr].length; k++){
+                    this.table.rows[this.sol_pr][k] = this.table.rows[this.sol_pr][k].div(to_div);
+                    new_row += this.table.rows[this.sol_pr][k].toLatex() +
+                        ((k<this.table.rows[this.sol_pr].length-1) ? ", " : "");
+                }
+
+                new_row += ").\\end{equation}";
+
+                this.addCellMessage(STRING_INDEX["process_pivot_element"]
+                    .replace("<<<row_divide>>>", "$" + to_div.toLatex() + "$")
+                    .replace("<<<row>>>", "$R_{" + (this.sol_pr+1) + "}$")
+                    .replace("<<<new_row_elements>>>", new_row));
+            }
+
+            this.state = 4;
+
+            break;
+
+        // Finally, we process the pivot column along with the rest of the table to get the new one
+        case 4:
+
+            // Go through all the rows (ignoring the pivot row) and apply row operations to all elements
+            var ma = this.table.rows;
+
+            var row_opstr = "";
+            var row_opstr_buffer = "";
+
+            for (var k=0; k<ma.length; k++){
+
+                if (k !== this.sol_pr){
+                    row_opstr += row_opstr_buffer;
+
+                    // Find out what we need to do with the column element
+                    var todo = ma[k][this.sol_pc].neg();
+
+                    // Do the actual computations
+                    for (var l=0; l<ma[k].length; l++){
+                        ma[k][l] = ma[k][l].add(todo.mul(ma[this.sol_pr][l]));
+                    }
+
+                    row_opstr += "$R_{" + (k+1) + "}=R_{" + (k+1) + "}" +
+                        (todo > 0 ? "+" : "") + (todo.abs().equals(1) ? "" : todo.toLatex()) +
+                        "R^{\\star}_{" + (this.sol_pr+1) + "}$ ";
+
+                    if (k<ma.length-1){
+                        row_opstr_buffer = ", ";
+                    }
+
+                    if (k==ma.length-2){
+                        row_opstr_buffer += "and ";
+                    }
+                }
+
+            }
+
+            this.addCellMessage(STRING_INDEX["process_pivot_column"]
+                .replace("<<<row_operations>>>", row_opstr)
+                .replace("<<<row>>>", "$R_{" + (this.sol_pr+1) + "}^{\\star}$"));
+
+            this.state = 5;
+
+            break;
+
+        // Just display the new tableau
+        case 5:
+
+            this.addCellMessage(STRING_INDEX["new_tableau"]);
+            this.addTableCell();
+            this.table.render("table-cell-"+this.current_table_no);
+
+            this.state = 1;
 
     }
 };
@@ -464,6 +697,9 @@ CellPlayer.prototype.addCellMessage = function(text){
         d3.select(".button-next").remove();
         self.iterate();
     });
+
+    // Re-typeset mathematics
+    mathjax_cells_update();
 
 };
 
