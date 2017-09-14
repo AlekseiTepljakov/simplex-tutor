@@ -622,7 +622,8 @@ CellPlayer.prototype.iterate = function()
 
             for (var k=0; k<ma.length; k++){
 
-                if (k !== this.sol_pr){
+                // Only consider rows that are not the pivot row and where the pivot column element doesn't equal zero
+                if (k !== this.sol_pr && !ma[k][this.sol_pc].equals(0)){
                     row_opstr += row_opstr_buffer;
 
                     // Find out what we need to do with the column element
