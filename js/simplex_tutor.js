@@ -695,8 +695,10 @@ CellPlayer.prototype.addCellMessage = function(text){
 
     // Bind a keyboard event as well
     Mousetrap.bind("n", function(e){
-        d3.select(".button-next").remove();
-        self.iterate();
+		if (self.state > 0){
+			d3.select(".button-next").remove();
+			self.iterate();
+		}
     });
 
     // Re-typeset mathematics
