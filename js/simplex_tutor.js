@@ -591,7 +591,7 @@ CellPlayer.prototype.iterate = function()
             }
             else{
                 // Next, we do the division
-                var new_row = "\\begin{equation}R_{" + (this.sol_pr+1) + "}^{\\star}=(";
+                var new_row = "\\begin{equation}R_{" + (this.sol_pr+1) + "}^{\\star}=\left(";
 
                 for(var k=0; k<this.table.rows[this.sol_pr].length; k++){
                     this.table.rows[this.sol_pr][k] = this.table.rows[this.sol_pr][k].div(to_div);
@@ -599,7 +599,7 @@ CellPlayer.prototype.iterate = function()
                         ((k<this.table.rows[this.sol_pr].length-1) ? ", " : "");
                 }
 
-                new_row += ").\\end{equation}";
+                new_row += "\right).\\end{equation}";
 
                 this.addCellMessage(STRING_INDEX["process_pivot_element"]
                     .replace("<<<row_divide>>>", "$" + to_div.toLatex() + "$")
