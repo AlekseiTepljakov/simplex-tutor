@@ -18,7 +18,7 @@ var STRING_INDEX = {
     "process_pivot_element": "To replace the pivot element with $+1$, we need to divide row <<<row>>> by <<<row_divide>>>. " +
                              "Then, the new row is <<<new_row_elements>>> <<<button_next>>>",
     "no_process_pivot_element": "The pivot element is already $+1$, so the row remains unchanged. <<<button_next>>>",
-    "process_pivot_column": "To get $0$ elsewhere in the pivot column, apply the following row operations using the modified " +
+    "process_pivot_column": "To get $0$ elsewhere in the pivot column, apply the following row operations using " +
                             "row <<<row>>> to get the new tableau: <<<row_operations>>>. <<<button_next>>>",
     "new_tableau": "The new tableau is thus constructed. <<<button_next>>>"
 };
@@ -429,6 +429,8 @@ function CellPlayer(id){
     this.current_text_no = 1; // Changes on any new text added
     this.current_table_no = 1; // Changes only when we replace the table at the end of an iteration
 
+	this.pivot_row_changed = null; // Whether we needed to apply changes to the pivot row
+	
     this.state = 0; // 0 is the initial state and it never returns to this number
 
     // The table that we are working on
@@ -585,11 +587,17 @@ CellPlayer.prototype.iterate = function()
 
             // First we figure out what we need to divide the pivot element by go get "+1"
             var to_div = this.table.rows[this.sol_pr][this.sol_pc];
+			
+			// Will the row change?
+			this.pivot_row_changed = false;
 
             if (to_div.equals(Fraction(1))){
                 this.addCellMessage(STRING_INDEX["no_process_pivot_element"]);
             }
             else{
+				
+				this.pivot_row_changed = true;
+				
                 // Next, we do the division
                 var new_row = "\\begin{equation}R_{" + (this.sol_pr+1) + "}^{\\star}=\\left(";
 
@@ -619,6 +627,9 @@ CellPlayer.prototype.iterate = function()
 
             var row_opstr = "";
             var row_opstr_buffer = "";
+			
+			// Do we need to star the pivot row?
+			var add_star = this.pivot_row_changed ? "^{\\star}" : "";
 
             for (var k=0; k<ma.length; k++){
 
@@ -636,7 +647,7 @@ CellPlayer.prototype.iterate = function()
 
                     row_opstr += "$R_{" + (k+1) + "}=R_{" + (k+1) + "}" +
                         (todo > 0 ? "+" : "") + (todo.abs().equals(1) ? "" : todo.toLatex()) +
-                        "R^{\\star}_{" + (this.sol_pr+1) + "}$ ";
+                        "R" + add_star + "_{" + (this.sol_pr+1) + "}$ ";
 
                     if (k<ma.length-1){
                         row_opstr_buffer = ", ";
@@ -651,7 +662,7 @@ CellPlayer.prototype.iterate = function()
 
             this.addCellMessage(STRING_INDEX["process_pivot_column"]
                 .replace("<<<row_operations>>>", row_opstr)
-                .replace("<<<row>>>", "$R_{" + (this.sol_pr+1) + "}^{\\star}$"));
+                .replace("<<<row>>>", "$R_{" + (this.sol_pr+1) + "}" + add_star + "$"));
 
             this.state = 5;
 
