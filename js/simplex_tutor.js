@@ -646,8 +646,9 @@ CellPlayer.prototype.iterate = function()
                     }
 
                     row_opstr += "$R_{" + (k+1) + "}=R_{" + (k+1) + "}" +
-                        (todo > 0 ? "+" : "") + (todo.abs().equals(1) ? "" : todo.toLatex()) +
-                        "R" + add_star + "_{" + (this.sol_pr+1) + "}$ ";
+                        (todo > 0 ? "+" : "") + ((todo < 0 && todo.equals(-1)) ? "-" : "") + 
+                        (todo.abs().equals(1) ? "" : todo.toLatex()) +
+                            "R" + add_star + "_{" + (this.sol_pr+1) + "}$ ";
 
                     if (k<ma.length-1){
                         row_opstr_buffer = ", ";
